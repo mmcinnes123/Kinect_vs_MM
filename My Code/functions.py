@@ -7,7 +7,7 @@ from quat_functions import *
 
 def read_data_frame_from_file(input_file):
     with open(input_file, 'r') as file:
-        df = pd.read_csv(file, header=0)
+        df = pd.read_csv(file, header=0, sep=",", encoding='utf-8')
     # Make seperate data frames
     IMU1_df = df.filter(["Shoulder W", "Shoulder X", "Shoulder Y", "Shoulder Z"], axis=1)
     IMU2_df = df.filter(["Thorax W", "Thorax X", "Thorax Y", "Thorax Z"], axis=1)
@@ -65,7 +65,7 @@ def transform_humerus_LCF(df):
     return transformed_quats_df
 
 
-def write_to_APDM(df_1, df_2, template_file, tag):
+def write_2_things_to_APDM(df_1, df_2, template_file, tag):
     # Make columns of zeros
     N = len(df_1)
     zeros_25_df = pd.DataFrame(np.zeros((N, 25)))
@@ -74,6 +74,30 @@ def write_to_APDM(df_1, df_2, template_file, tag):
 
     # Make a dataframe with zeros columns inbetween the data
     IMU_and_zeros_df = pd.concat([zeros_25_df, df_1, zeros_11_df, df_2, zeros_2_df], axis=1)
+
+    # Read in the APDM template and save as an array
+    with open(template_file, 'r') as file:
+        template_df = pd.read_csv(file, header=0)
+        template_array = template_df.to_numpy()
+
+    # Concatenate the IMU_and_zeros and the APDM template headings
+    IMU_and_zeros_array = IMU_and_zeros_df.to_numpy()
+    new_array = np.concatenate((template_array, IMU_and_zeros_array), axis=0)
+    new_df = pd.DataFrame(new_array)
+
+    # Add the new dataframe into the template
+    new_df.to_csv("APDM_" + tag + ".csv", mode='w', index=False, header=False, encoding='utf-8', na_rep='nan')
+
+# Write new data to APDM file template
+def write_four_things_to_APDM(df_1, df_2, df_3, df_4, template_file, tag):
+    # Make columns of zeros
+    N = len(df_1)
+    zeros_25_df = pd.DataFrame(np.zeros((N, 25)))
+    zeros_11_df = pd.DataFrame(np.zeros((N, 11)))
+    zeros_2_df = pd.DataFrame(np.zeros((N, 2)))
+
+    # Make a dataframe with zeros columns inbetween the data
+    IMU_and_zeros_df = pd.concat([zeros_25_df, df_1, zeros_11_df, df_2, zeros_11_df, df_3, zeros_11_df, df_4, zeros_2_df], axis=1)
 
     # Read in the APDM template and save as an array
     with open(template_file, 'r') as file:
